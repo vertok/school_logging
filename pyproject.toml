@@ -23,3 +23,6 @@ dependencies = []  # Add dependencies here if your logger needs them
 
 [project.urls]
 "Homepage" = "https://github.com/vertok/school_logging"
+
+[tool.setuptools]
+packages = ["school_logging"]
