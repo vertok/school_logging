@@ -101,10 +101,11 @@ class ColoredLogger:
 
         if not logger.handlers:
             # Console handler (colored output)
+            logging.basicConfig(level=getattr(logging, self.verbose_level))
             ch: logging.StreamHandler = logging.StreamHandler()
             ch.setLevel(self.verbose_level)
             ch.setFormatter(ColoredFormatter(
-                '%(asctime)s - %(name)s - [%(levelname)s] - %(message)s',
+                '%(asctime)s - %(filename)s - %(name)s - [%(levelname)s] - %(message)s',
                 colored=True
             ))
             logger.addHandler(ch)
@@ -118,7 +119,7 @@ class ColoredLogger:
             fh: logging.FileHandler = logging.FileHandler(log_file_path)
             fh.setLevel(logging.DEBUG)
             fh.setFormatter(ColoredFormatter(
-                '%(asctime)s - %(name)s - [%(levelname)s] - %(message)s',
+                '%(asctime)s - %(filename)s - %(name)s - [%(levelname)s] - %(message)s',
                 colored=False
             ))
             logger.addHandler(fh)
@@ -170,13 +171,6 @@ class ColoredLogger:
         Logs a critical message and raises a CriticalError.
         """
         self.logger.critical(msg, *args, **kwargs)
-
-def set_logging_level(level: str) -> None:
-    """Sets the logging level for the application."""
-    log_level = level  # Assume the provided level is valid
-    if not hasattr(logging, log_level):
-        log_level = 'INFO'
-    logging.basicConfig(level=getattr(logging, log_level))
 
 def parse_args() -> argparse.Namespace:
     """
