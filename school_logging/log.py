@@ -31,7 +31,9 @@ command-line arguments to set the logging level and demonstrate the logger's usa
 
 import logging
 import sys
+import os
 import argparse
+from datetime import datetime
 from typing import Dict, Any
 
 # Define log level colors
@@ -62,10 +64,14 @@ class CriticalExitHandler(logging.Handler):
             sys.exit(1)
 
 class ColoredFormatter(logging.Formatter):
+    def __init__(self, fmt=None, datefmt=None, style='%', colored: bool = True):
+        super().__init__(fmt, datefmt, style)
+        self.colored = colored
+
     def format(self, record: logging.LogRecord) -> str:
         log_color: str = LOG_COLORS.get(record.levelname, RESET_COLOR)
         message: str = super().format(record)
-        return f"{log_color}{message}{RESET_COLOR}"
+        return f"{log_color}{message}{RESET_COLOR}" if self.colored else message
 
 class ColoredLogger:
     """
@@ -88,24 +94,34 @@ class ColoredLogger:
         self.logger: logging.Logger = self._setup_logger()
 
     def _setup_logger(self) -> logging.Logger:
-        """
-        Sets up and returns the logger instance.
-        """
-        logger: logging.Logger = logging.getLogger(self.name)
-        logger.setLevel(logging.DEBUG)  # Set to lowest level to handle all levels
+        """Sets up and returns the logger instance."""
 
-        # Check if the logger already has handlers to avoid duplicate logs
+        logger: logging.Logger = logging.getLogger(self.name)
+        logger.setLevel(self.verbose_level)
+
         if not logger.handlers:
-            # Create console handler and set level based on verbose_level
+            # Console handler (colored output)
             ch: logging.StreamHandler = logging.StreamHandler()
             ch.setLevel(self.verbose_level)
-
-            # Create formatter and add it to the handler
-            formatter: logging.Formatter = ColoredFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-            ch.setFormatter(formatter)
-
-            # Add handler to the logger
+            ch.setFormatter(ColoredFormatter(
+                '%(asctime)s - %(name)s - [%(levelname)s] - %(message)s',
+                colored=True
+            ))
             logger.addHandler(ch)
+
+            # File handler (all levels, no color, saved with timestamp)
+            log_dir = 'logging'  # Specify the logging directory
+            os.makedirs(log_dir, exist_ok=True)  # Create the directory if it doesn't exist
+            now = datetime.now().astimezone()
+            timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
+            log_file_path = os.path.join(log_dir, f'logs_{timestamp}.log')
+            fh: logging.FileHandler = logging.FileHandler(log_file_path)
+            fh.setLevel(logging.DEBUG)
+            fh.setFormatter(ColoredFormatter(
+                '%(asctime)s - %(name)s - [%(levelname)s] - %(message)s',
+                colored=False
+            ))
+            logger.addHandler(fh)
 
             # Add the CriticalExitHandler
             critical_handler: CriticalExitHandler = CriticalExitHandler()
@@ -155,6 +171,13 @@ class ColoredLogger:
         """
         self.logger.critical(msg, *args, **kwargs)
 
+def set_logging_level(level: str) -> None:
+    """Sets the logging level for the application."""
+    log_level = level  # Assume the provided level is valid
+    if not hasattr(logging, log_level):
+        log_level = 'INFO'
+    logging.basicConfig(level=getattr(logging, log_level))
+
 def parse_args() -> argparse.Namespace:
     """
     Parses command-line arguments.
@@ -163,14 +186,16 @@ def parse_args() -> argparse.Namespace:
         argparse.Namespace: The parsed arguments.
     """
     parser: argparse.ArgumentParser = argparse.ArgumentParser(description='Colored Logger')
-    parser.add_argument('--verbose', type=str.upper, choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], default='INFO',
+    parser.add_argument('--verbose', type=str.upper,
+                        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+                        default='INFO',
                         help='Set the logging level (case-insensitive)')
     args: argparse.Namespace = parser.parse_args()
     return args
 
 if __name__ == "__main__":
     args: argparse.Namespace = parse_args()
-    log: ColoredLogger = ColoredLogger(__name__, args.verbose)
+    log: ColoredLogger = ColoredLogger('logger', args.verbose)
 
     # Example usage
     log.debug("This is a debug message")
