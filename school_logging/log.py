@@ -46,10 +46,10 @@ class ColoredLogger:
 
     def _setup_logger(self) -> logging.Logger:
         logger = logging.getLogger(self.name)
+        logger.setLevel(self.level)
 
         if not logger.handlers:
             # Console handler (colored output)
-            logging.basicConfig(level=self.level)
             ch = logging.StreamHandler()
             ch.setLevel(self.level)
             ch.setFormatter(ColoredFormatter(
@@ -114,28 +114,3 @@ class ColoredLogger:
             'CRITICAL': logging.CRITICAL
         }
         return log_level_mapping.get(verbose.upper(), logging.INFO)
-
-def parse_args() -> argparse.Namespace:
-    """
-    Parses command-line arguments.
-
-    Returns:
-        argparse.Namespace: The parsed arguments.
-    """
-    parser = argparse.ArgumentParser(description='Colored Logger')
-    parser.add_argument('--verbose', type=str.upper,
-                        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-                        default='INFO',
-                        help='Set the logging level (case-insensitive)')
-    return parser.parse_args()
-
-if __name__ == "__main__":
-    args = parse_args()
-    log = ColoredLogger('logger', args.verbose)
-
-    # Example usage
-    log.debug("This is a debug message")
-    log.info("This is an info message")
-    log.warning("This is a warning message")
-    log.error("This is an error message")
-    log.critical("This is a critical message. Program will terminate.")
