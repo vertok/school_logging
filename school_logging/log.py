@@ -49,7 +49,7 @@ class ColoredLogger:
 
     def _setup_logger(self) -> logging.Logger:
         logger = logging.getLogger(self.name)
-        logger.setLevel(self.level)
+        logger.setLevel(logging.DEBUG)
         
         # CRITICAL FIX: Prevent propagation to root logger to avoid duplicate logs
         logger.propagate = False
